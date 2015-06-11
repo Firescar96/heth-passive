@@ -33,18 +33,18 @@ getBlkTxAddressR' address offset = do
     blks <- runDB $ E.select $
         E.from $ \(blk `E.InnerJoin` bdRef `E.FullOuterJoin` rawTX) -> do
 
-        E.on ( bdRef E.^. BlockDataRefBlockId E.==. rawTX E.^. RawTransactionBlockId ) 
-        E.on ( bdRef E.^. BlockDataRefBlockId E.==. blk E.^. BlockId )                                        
-        E.where_ (( bdRef E.^. BlockDataRefCoinbase E.==. E.val (Address wd160)) E.||.
-                  ( ( rawTX E.^. RawTransactionFromAddress E.==. E.val (Address wd160))
-                      E.||. ( rawTX  E.^. RawTransactionToAddress E.==. E.val (Just (Address wd160) ))))
+            E.on ( bdRef E.^. BlockDataRefBlockId E.==. rawTX E.^. RawTransactionBlockId ) 
+            E.on ( bdRef E.^. BlockDataRefBlockId E.==. blk E.^. BlockId )                                        
+            E.where_ (( bdRef E.^. BlockDataRefCoinbase E.==. E.val (Address wd160)) E.||.
+                      ( ( rawTX E.^. RawTransactionFromAddress E.==. E.val (Address wd160))
+                          E.||. ( rawTX  E.^. RawTransactionToAddress E.==. E.val (Just (Address wd160) ))))
 
-        E.limit $ (fetchLimit)
-        E.offset $ (limit * off)
+            E.limit $ (fetchLimit)
+            E.offset $ (limit * off)
 
-        E.orderBy [E.desc (bdRef E.^. BlockDataRefNumber)]
+            E.orderBy [E.desc (bdRef E.^. BlockDataRefNumber)]
 
-        return blk
+            return blk
     returnJson $ nub $ P.map bToBPrime' (P.map entityVal (blks :: [Entity Block])) 
         where
           ((wd160, _):_) = readHex $ T.unpack $ address ::  [(Word160,String)]

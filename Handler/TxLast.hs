@@ -18,8 +18,8 @@ getTxLastR' num = do
     addHeader "Access-Control-Allow-Origin" "*"
     tx <- runDB $ E.select $
         E.from $ \rawTX -> do
-        E.limit $ P.min (fromIntegral num :: Int64) fetchLimit 
-        --   E.offset $ (limit * off)
-        E.orderBy [E.desc (rawTX E.^. RawTransactionBlockId)]  
-        return rawTX
+            E.limit $ P.min (fromIntegral num :: Int64) fetchLimit 
+            --   E.offset $ (limit * off)
+            E.orderBy [E.desc (rawTX E.^. RawTransactionBlockId)]  
+            return rawTX
     returnJson $ P.map rtToRtPrime' (P.map entityVal (tx :: [Entity RawTransaction]))

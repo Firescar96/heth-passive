@@ -39,15 +39,14 @@ getAccountInfoR = do
 
     addrs <- runDB $ E.selectDistinct $
         E.from $ \(accStateRef) -> do
+            E.where_ ((P.foldl1 (E.&&.) $ P.map (getAccFilter (accStateRef)) $ getParameters ))
 
-        E.where_ ((P.foldl1 (E.&&.) $ P.map (getAccFilter (accStateRef)) $ getParameters ))
+            E.offset $ (limit * offset)
+            E.limit $ limit
 
-        E.offset $ (limit * offset)
-        E.limit $ limit
+            E.orderBy [E.desc (accStateRef E.^. AddressStateRefBalance)]
 
-        E.orderBy [E.desc (accStateRef E.^. AddressStateRefBalance)]
-
-        return accStateRef
+            return accStateRef
     --liftIO $ traceIO $ "number of results: " P.++ (show $ P.length addrs)
     returnJson $ nub $ P.map asrToAsrPrime (P.map entityVal (addrs :: [Entity AddressStateRef])) -- consider removing nub - it takes time n^{2}
         where 

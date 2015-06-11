@@ -2,25 +2,20 @@
 
 <h1>BlockApps.net - the most convenient and reliable API for writing Blockchain Based applications.
 
-<p>
-  All blockchain based applications will need to pull information from the blockchain. We've made that
-  process simple. We've created an intuitive RESTful API for querying the Ethereum Blockchain. Our Haskell based
-  Ethereum network peer (client) is compliant with PoC9 and can also be used as a web server. But you don't have to
-  install the peer - simply follow the links below to try the API. 
-
- <p>
-  We have static <a href="/query">GET routes</a> for transactions, blocks and account states.
-  More generally, we support <a href="help.html">query strings</a>.
-  See the descriptions within, including examples.
-  <break>
-  Also, check out a <a href="/index.html">demo</a> of how to parse and visualize the records you've requested.
-  <break>
-  <p>
-    Take a look at our <a href="/testreport.html">build test results</a>.
-<h2>Coming Soon:
-
-<p>
- <ol> 
-  <li> Push Notifications - be notified of new blocks, transaction confirmations, as they happen.
-  <li> Transaction Signing - sign transactions in the browser, and push them to the network - without running a client locally.
-  <li> Network Statistics - view the health of the network, in real time.
+    <p> All blockchain based applications will need to pull information from the blockchain. We've made that
+      process simple. We've created an intuitive RESTful API for querying the Ethereum Blockchain. Our Haskell based
+      Ethereum network peer (client) is compliant with PoC9 and can also be used as a web server. But you don't have to
+      install the peer - simply follow the links below to try the API. 
+    <p> We have static <a href="/query">GET routes</a> for transactions, blocks and account states.
+      More generally, we support <a href="help.html">query strings</a>.
+      See the descriptions within, including examples.
+    <break>
+    <p> Also, check out a <a href="/index.html">demo</a> of how to parse and visualize the records you've requested.
+    <break>
+    <p> Take a look at our <a href="/testreport.html">build test results</a>.
+    <h2>Coming Soon:
+    <p>
+    <ol> 
+        <li> Push Notifications - be notified of new blocks, transaction confirmations, as they happen.
+        <li> Transaction Signing - sign transactions in the browser, and push them to the network - without running a client locally.
+        <li> Network Statistics - view the health of the network, in real time.

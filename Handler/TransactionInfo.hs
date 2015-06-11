@@ -20,11 +20,11 @@ import Handler.JsonJuggler
 import Import
 import qualified Database.Esqueleto as E
 import qualified Prelude as P
+import qualified Data.Text as T
 
 getTransactionInfoR :: Handler Value
 getTransactionInfoR = do
     getParameters <- reqGetParams <$> getRequest
-
     appNameMaybe <- lookupGetParam "appname"
     case appNameMaybe of
         (Just t) -> liftIO $ putStrLn $ t
@@ -41,21 +41,20 @@ getTransactionInfoR = do
     addHeader "Access-Control-Allow-Origin" "*"
     txs <- runDB $ E.select $
         E.from $ \(rawTx) -> do
+            E.where_ ((P.foldl1 (E.&&.) $ P.map (getTransFilter (rawTx)) $ getParameters ))
 
-        E.where_ ((P.foldl1 (E.&&.) $ P.map (getTransFilter (rawTx)) $ getParameters ))
+            let criteria = P.map (getTransFilter rawTx) $ getParameters 
+            let allCriteria = ((rawTx E.^. RawTransactionBlockNumber) E.>=. E.val index) : criteria
 
-        let criteria = P.map (getTransFilter rawTx) $ getParameters 
-        let allCriteria = ((rawTx E.^. RawTransactionBlockNumber) E.>=. E.val index) : criteria
+            -- FIXME: if more than `limit` transactions per block, we will need to have a tuple as index
+            E.where_ (P.foldl1 (E.&&.) allCriteria)
 
-        -- FIXME: if more than `limit` transactions per block, we will need to have a tuple as index
-        E.where_ (P.foldl1 (E.&&.) allCriteria)
+            E.offset $ (limit * offset)
+            E.limit $ (limit)
+            E.orderBy [E.asc (rawTx E.^. RawTransactionBlockNumber), E.asc (rawTx E.^. RawTransactionNonce)]
 
-        E.offset $ (limit * offset)
-        E.limit $ (limit)
-        E.orderBy [E.asc (rawTx E.^. RawTransactionBlockNumber), E.asc (rawTx E.^. RawTransactionNonce)]
-
-        return rawTx
-        --liftIO $ traceIO $ "number of results: " P.++ (show $ P.length txs)
+            return rawTx
+            --liftIO $ traceIO $ "number of results: " P.++ (show $ P.length txs)
 
     let modTxs = (nub (P.map entityVal (txs :: [Entity RawTransaction])))
     let newindex = pack $ show $ 1+(getTxNum $ P.last modTxs)

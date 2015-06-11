@@ -1,23 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Handler.BlkCoinbase where
-import Import
 
-
-import Handler.Common
-
-import qualified Prelude as P
 import Blockchain.Data.Address
-import Blockchain.ExtWord
-import Numeric
 import Blockchain.Data.DataDefs
-
-import qualified Database.Esqueleto as E
-
-import qualified Data.Text as T
-
-import Handler.JsonJuggler
+import Blockchain.ExtWord
 import Data.List       
+import Handler.Common
+import Handler.JsonJuggler
+import Import
+import Numeric
+import qualified Data.Text as T
+import qualified Database.Esqueleto as E
+import qualified Prelude as P
 
 getBlkCoinbaseR :: Text -> Handler Value
 getBlkCoinbaseR address = (getBlkCoinbaseR' address 0)
@@ -27,16 +22,15 @@ getBlkCoinbaseR' address offset = do
     addHeader "Access-Control-Allow-Origin" "*"
     blks <- runDB $ E.select $
         E.from $ \(blk `E.InnerJoin` bdRef) -> do
+            E.on ( bdRef E.^. BlockDataRefBlockId E.==. blk E.^. BlockId )                                        
+            E.where_ (( bdRef E.^. BlockDataRefCoinbase E.==. E.val (Address wd160)) )
 
-        E.on ( bdRef E.^. BlockDataRefBlockId E.==. blk E.^. BlockId )                                        
-        E.where_ (( bdRef E.^. BlockDataRefCoinbase E.==. E.val (Address wd160)) )
+            E.limit $ (limit)
+            E.offset $ (limit * off)
 
-        E.limit $ (limit)
-        E.offset $ (limit * off)
+            E.orderBy [E.desc (bdRef E.^. BlockDataRefNumber)]
 
-        E.orderBy [E.desc (bdRef E.^. BlockDataRefNumber)]
-
-        return blk
+            return blk
     returnJson $ nub $ P.map bToBPrime' (P.map entityVal (blks :: [Entity Block])) 
         where
             ((wd160, _):_) = readHex $ T.unpack $ address ::  [(Word160,String)]
