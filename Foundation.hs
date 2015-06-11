@@ -2,31 +2,24 @@
 
 module Foundation where
 
-import Import.NoFoundation
-import Blockchain.Data.DataDefs
+-- import Yesod.Auth.BrowserId (authBrowserId)
+import Control.Monad
+import Data.Time
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
+import Debug.Trace
+import Import.NoFoundation
+import qualified Data.Text as T
+import qualified Prelude as P
+import qualified Yesod.Core.Unsafe as Unsafe
 import Text.Hamlet          (hamletFile)
 import Text.Jasmine         (minifym)
--- import Yesod.Auth.BrowserId (authBrowserId)
-import Yesod.Default.Util   (addStaticContentExternal)
 import Yesod.Core.Types     (Logger)
-import qualified Yesod.Core.Unsafe as Unsafe
-import Blockchain.Data.Address
-import Numeric
-import System.Locale
-import Data.Time
-import Data.Time.Format
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Prelude as P
+import Yesod.Default.Util   (addStaticContentExternal)
 
-import Data.Maybe
-
-import Blockchain.Data.PersistTypes
-
-import Debug.Trace
+debug :: a -> String -> a
 debug = flip trace
 
+timeFormat :: String
 timeFormat = "%Y-%m-%dT%T.%q"
 
 stringToDate :: Text -> UTCTime

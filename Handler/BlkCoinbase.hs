@@ -6,9 +6,6 @@ import Import
 
 import Handler.Common
 
-import Database.Persist       
-import Database.Persist.TH
-import Database.Persist.Postgresql
 import qualified Prelude as P
 import Blockchain.Data.Address
 import Blockchain.ExtWord
@@ -22,40 +19,40 @@ import qualified Data.Text as T
 import Handler.JsonJuggler
 import Data.List       
 
+getBlkCoinbaseR :: Text -> Handler Value
 getBlkCoinbaseR address = (getBlkCoinbaseR' address 0)
 
 getBlkCoinbaseR' :: Text -> Integer -> Handler Value
 getBlkCoinbaseR' address offset = do
-                   addHeader "Access-Control-Allow-Origin" "*"
-                   blks <- runDB $ E.select $
-                                        E.from $ \(blk `E.InnerJoin` bdRef) -> do
+    addHeader "Access-Control-Allow-Origin" "*"
+    blks <- runDB $ E.select $
+        E.from $ \(blk `E.InnerJoin` bdRef) -> do
 
-                                        E.on ( bdRef E.^. BlockDataRefBlockId E.==. blk E.^. BlockId )                                        
-                                        E.where_ (( bdRef E.^. BlockDataRefCoinbase E.==. E.val (Address wd160)) )
+        E.on ( bdRef E.^. BlockDataRefBlockId E.==. blk E.^. BlockId )                                        
+        E.where_ (( bdRef E.^. BlockDataRefCoinbase E.==. E.val (Address wd160)) )
 
-                                        E.limit $ (limit)
-                                        E.offset $ (limit * off)
+        E.limit $ (limit)
+        E.offset $ (limit * off)
 
-                                        E.orderBy [E.desc (bdRef E.^. BlockDataRefNumber)]
+        E.orderBy [E.desc (bdRef E.^. BlockDataRefNumber)]
 
-                                        return blk
-                   returnJson $ nub $ P.map bToBPrime' (P.map entityVal (blks :: [Entity Block])) 
-
+        return blk
+    returnJson $ nub $ P.map bToBPrime' (P.map entityVal (blks :: [Entity Block])) 
         where
-          ((wd160, _):_) = readHex $ T.unpack $ address ::  [(Word160,String)]
-          limit = (fromIntegral $ fetchLimit :: Int64)
-          off = (fromIntegral $ offset :: Int64)
+            ((wd160, _):_) = readHex $ T.unpack $ address ::  [(Word160,String)]
+            limit = (fromIntegral $ fetchLimit :: Int64)
+            off = (fromIntegral $ offset :: Int64)
 
 getBlkCoinbaseNumR :: Text -> Handler Value
 getBlkCoinbaseNumR address = do
-                           addHeader "Access-Control-Allow-Origin" "*"
-                           count <- runDB $ E.select $
-                                E.from $ \a -> do
-                                  E.where_ ( a E.^. BlockDataRefCoinbase E.==. E.val (Address wd160) )
-                                  let cnt = E.countRows :: E.SqlExpr (E.Value Int) 
-                                  return cnt
-                           returnJson $ P.map E.unValue count
-                           where ((wd160, _):_) = readHex $ T.unpack $ address ::  [(Word160,String)]
+    addHeader "Access-Control-Allow-Origin" "*"
+    count <- runDB $ E.select $
+        E.from $ \a -> do
+        E.where_ ( a E.^. BlockDataRefCoinbase E.==. E.val (Address wd160) )
+        let cnt = E.countRows :: E.SqlExpr (E.Value Int) 
+        return cnt
+    returnJson $ P.map E.unValue count
+        where ((wd160, _):_) = readHex $ T.unpack $ address ::  [(Word160,String)]
 
 
 -- data BdrPWNum = BdrPWNum BlockDataRef' Int
