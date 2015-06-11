@@ -1,7 +1,6 @@
 module Handler.PushTransaction where
 
 import Import
-import Yesod.Core.Handler
 
 getPushTransactionR :: Handler ()
 getPushTransactionR = do

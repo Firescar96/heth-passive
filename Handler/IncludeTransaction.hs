@@ -11,44 +11,29 @@
 
 module Handler.IncludeTransaction where
 
-import Import
-
-import Data.Aeson
-
-import Database.Persist
-import Database.Persist.TH
-import Database.Persist.Postgresql
-
-import qualified Data.ByteString as B
-
-import Handler.JsonJuggler
-
 import Blockchain.Data.DataDefs
-import Blockchain.Data.Transaction
-import Blockchain.Util
-import Blockchain.Data.Address
-import Blockchain.Data.Code
-
-import qualified Prelude as P
-import qualified Data.Text as T
+import Data.Aeson
+import Handler.JsonJuggler
+import Import
 
 postIncludeTransactionR :: Handler ()
 postIncludeTransactionR = do
-   addHeader "Access-Control-Allow-Origin" "*"
-   addHeader "Access-Control-Allow-Headers" "Content-Type"
+    addHeader "Access-Control-Allow-Origin" "*"
+    addHeader "Access-Control-Allow-Headers" "Content-Type"
   
-   tx <- parseJsonBody :: Handler (Result RawTransaction')
-   case tx of
-       (Success (RawTransaction' raw "")) -> do
+    tx <- parseJsonBody :: Handler (Result RawTransaction')
+    case tx of
+        (Success (RawTransaction' raw _)) -> do
                 _ <- runDB $ insert $ raw
-                let h = toJSON (rawTransactionTxHash raw)
-                case h of
-                  (String h') ->
-                    sendResponseStatus status200 (("/query/transaction?hash=" ++ h') :: Text)
-                    
-       (Error msg) -> do
---                liftIO $ Import.putStrLn $ T.pack $ msg
-                sendResponseStatus status404  ("Could not parse" :: Text)
+                let res = toJSON (rawTransactionTxHash raw)
+                case res of
+                    (String h') ->
+                        sendResponseStatus status200 (("/query/transaction?hash=" ++ h') :: Text)
+                    _ -> sendResponseStatus status404  ("Could not parse" :: Text)
+        
+        (Error _msg) -> do
+            --liftIO $ Import.putStrLn $ T.pack $ msg
+            sendResponseStatus status404  ("Could not parse" :: Text)
 
 optionsIncludeTransactionR :: Handler RepPlain
 optionsIncludeTransactionR = do

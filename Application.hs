@@ -13,22 +13,14 @@ module Application
     ) where
 
 import Blockchain.Data.DataDefs
-import Control.Monad.Logger                 (liftLoc, runLoggingT, runStderrLoggingT, 
-                                              runStdoutLoggingT, runNoLoggingT)
-import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr,
-                                             pgPoolSize, runSqlPool)
-import Database.Persist.Postgresql
+import Database.PostgreSQL.Simple.Internal
+import qualified Control.Monad.Logger as LG
+import qualified Database.Persist.Postgresql as PS
+import qualified Database.PostgreSQL.LibPQ as PSL
+import qualified Database.PostgreSQL.Simple as PSS
+import Debug.Trace
 
-import qualified Database.PostgreSQL.Simple as PG
-
-import Database.Esqueleto.Internal.Sql
-import Database.Persist.Sql.Util
-
-import qualified Database.PostgreSQL.LibPQ as PQ
-
-import           Database.PostgreSQL.Simple.Internal
-
-import Import hiding (migrateAll)
+import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
@@ -43,39 +35,38 @@ import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
-import Handler.Common
-import Handler.Home
-import Handler.Query
-import Handler.TransactionInfo
+import Handler.AccAddress
+import Handler.AccBalance
+import Handler.AccNonce
 import Handler.AccountInfo
-import Handler.BlockInfo
-import Handler.TxHash
-import Handler.TxAddress
-import Handler.BlkNumber
+import Handler.BlkCoinbase
+import Handler.BlkDifficulty
 import Handler.BlkGas
 import Handler.BlkGasRange
+import Handler.BlkHash
+import Handler.BlkId
+import Handler.BlkLast
+import Handler.BlkNumber
 import Handler.BlkNumberRange
 import Handler.BlkTimeRange
-import Handler.BlkId
-import Handler.AccAddress
-import Handler.AccNonce
-import Handler.AccBalance
-import Handler.BlkDifficulty
-import Handler.BlkHash
-import Handler.BlkLast
-import Handler.Demo
-import Handler.BlkCoinbase
 import Handler.BlkTxAddress
+import Handler.BlockInfo
+import Handler.Common
+import Handler.Demo
 import Handler.Help
-import Handler.TxLast
-import Handler.Test
+import Handler.Home
 import Handler.IncludeTransaction
-import Handler.QueuedTransactions
 import Handler.PushTransaction
+import Handler.Query
+import Handler.QueuedTransactions
+import Handler.Test
+import Handler.TransactionInfo
+import Handler.TxAddress
+import Handler.TxHash
+import Handler.TxLast
 
-import Debug.Trace
+debug :: a -> String -> a
 debug = flip trace
-
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -107,29 +98,31 @@ makeFoundation appSettings = do
 
     -- Create the database connection pool
     pool <-  myLogger $ myPool
-        (pgConnStr  $ appDatabaseConf appSettings)
-        (pgPoolSize $ appDatabaseConf appSettings)
+        (PS.pgConnStr  $ appDatabaseConf appSettings)
+        (PS.pgPoolSize $ appDatabaseConf appSettings)
 
     -- Perform database migration using our application's logging settings.
-    --runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
-    myLogger (runSqlPool (runMigrationSilent migrateAll) pool) --runMigration
+    --LG.runLoggingT (PS.runSqlPool (runMigration migrateAll) pool) logFunc
+    _ <-myLogger (PS.runSqlPool (PS.runMigrationSilent migrateAll) pool) --runMigration
 
     -- Return the foundation
     return $ mkFoundation pool
 
+myLogger :: LG.NoLoggingT m a -> m a
+myLogger = LG.runNoLoggingT --LG.runStdoutLoggingT
 
-myLogger = runNoLoggingT --runStdoutLoggingT
-
-noPool :: PG.Connection -> IO ()
+noPool :: PSS.Connection -> IO ()
 noPool = const $ return ()
 
-prePool :: PG.Connection -> IO ()
+prePool :: PSS.Connection -> IO ()
 prePool conn = withConnection conn $ const $ do 
-                            --id <- PQ.backendPID
-                            liftIO $ traceIO $ "hello"
-                            return ()
+    --id <- PSL.backendPID
+    liftIO $ traceIO $ "hello"
+    return ()
 
-myPool = createPostgresqlPoolModified $ noPool
+myPool :: (MonadBaseControl IO m, MonadLogger m, MonadIO m) =>
+                PS.ConnectionString -> Int -> m PS.ConnectionPool
+myPool = PS.createPostgresqlPoolModified $ noPool
 
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
@@ -160,7 +153,7 @@ warpSettings foundation =
         when (defaultShouldDisplayException e) $ messageLoggerSource
             foundation
             (appLogger foundation)
-            $(qLocation >>= liftLoc)
+            $(qLocation >>= LG.liftLoc)
             "yesod"
             LevelError
             (toLogStr $ "Exception from Warp: " ++ show e))
